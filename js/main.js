@@ -1,4 +1,5 @@
 import {loadShaders} from "./resources.js";
+import {mat4} from "./gl-matrix/index.js";
 
 let gl;
 document.addEventListener('DOMContentLoaded', init);
@@ -10,39 +11,78 @@ function init() {
         throw new Error('WebGL does not supported in Browser')
     }
 
+    gl.viewport(0, 0, gl.canvas.width, gl.canvas.height)
+
     loadShaders().then(start)
 }
 
 function start([vertexShaderSrc, fragmentShaderSrc]) {
     console.log('loaded', arguments)
 
+    const vertexes = [
+        -0.5, -0.5, -0.5,
+        0.5, -0.5, -0.5,
+        0.5, 0.5, -0.5,
+        0.5, 0.5, -0.5,
+        -0.5, 0.5, -0.5,
+        -0.5, -0.5, -0.5,
 
-    const triangleVertexes = [
-        1.0, -1.0, 0.0,
-        0.0, 1.0, 0.0,
-        -1.0, -1.0, 0.0
-    ]
-    const triangleVertexesPositionBuffer = gl.createBuffer()
-    gl.bindBuffer(gl.ARRAY_BUFFER, triangleVertexesPositionBuffer)
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(triangleVertexes), gl.STATIC_DRAW)
+        -0.5, -0.5, 0.5,
+        0.5, -0.5, 0.5,
+        0.5, 0.5, 0.5,
+        0.5, 0.5, 0.5,
+        -0.5, 0.5, 0.5,
+        -0.5, -0.5, 0.5,
 
-    const triangleColors = [
-        1.0, 0.0, 0.0, 1.0,
-        0.0, 1.0, 0.0, 1.0,
-        0.0, 0.0, 1.0, 1.0
-    ]
-    const triangleColorsBuffer = gl.createBuffer()
-    gl.bindBuffer(gl.ARRAY_BUFFER, triangleColorsBuffer)
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(triangleColors), gl.STATIC_DRAW)
+        -0.5, 0.5, 0.5,
+        -0.5, 0.5, -0.5,
+        -0.5, -0.5, -0.5,
+        -0.5, -0.5, -0.5,
+        -0.5, -0.5, 0.5,
+        -0.5, 0.5, 0.5,
 
-    const trianglePositionAndColors = [
-        1.0, -1.0, 0.0, 1.0, 0.0, 0.0, 1.0,
-        0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 1.0,
-        -1.0, -1.0, 0.0, 0.0, 0.0, 1.0, 1.0
+        0.5, 0.5, 0.5,
+        0.5, 0.5, -0.5,
+        0.5, -0.5, -0.5,
+        0.5, -0.5, -0.5,
+        0.5, -0.5, 0.5,
+        0.5, 0.5, 0.5,
+
+        -0.5, -0.5, -0.5,
+        0.5, -0.5, -0.5,
+        0.5, -0.5, 0.5,
+        0.5, -0.5, 0.5,
+        -0.5, -0.5, 0.5,
+        -0.5, -0.5, -0.5,
+
+        -0.5, 0.5, -0.5,
+        0.5, 0.5, -0.5,
+        0.5, 0.5, 0.5,
+        0.5, 0.5, 0.5,
+        -0.5, 0.5, 0.5,
+        -0.5, 0.5, -0.5,
     ]
-    const positionAndColorBuffer = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, positionAndColorBuffer)
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(trianglePositionAndColors), gl.STATIC_DRAW)
+    const vertexesPositionBuffer = gl.createBuffer()
+    gl.bindBuffer(gl.ARRAY_BUFFER, vertexesPositionBuffer)
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertexes), gl.STATIC_DRAW)
+
+    const faceColors = [
+        [1, 0, 0, 1], // front
+        [0, 1, 0, 1], // back
+        [0, 0, 1, 1], // top
+        [1, 1, 0, 1], // bottom
+        [0, 1, 1, 1], // right
+        [1, 0, 1, 1], // left
+    ]
+
+    const colors = faceColors.reduce((acc, curr, index) =>  {
+        const facePoints = new Array(6).fill(curr)
+        return acc.concat(facePoints.flat())
+    }, [])
+
+    const colorsBuffer = gl.createBuffer()
+    gl.bindBuffer(gl.ARRAY_BUFFER, colorsBuffer)
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(colors), gl.STATIC_DRAW)
 
     const vertexShader = compileVertexShader(vertexShaderSrc, gl.VERTEX_SHADER);
     const fragmentShader = compileVertexShader(fragmentShaderSrc, gl.FRAGMENT_SHADER);
@@ -52,30 +92,53 @@ function start([vertexShaderSrc, fragmentShaderSrc]) {
 
     const positionAttributeLocation = gl.getAttribLocation(program, 'position')
     gl.enableVertexAttribArray(positionAttributeLocation)
-        // gl.bindBuffer(gl.ARRAY_BUFFER, triangleVertexesPositionBuffer)
-        // gl.vertexAttribPointer(positionAttributeLocation, 3, gl.FLOAT, false, 0, 0)
-    gl.bindBuffer(gl.ARRAY_BUFFER, positionAndColorBuffer)
-    gl.vertexAttribPointer(positionAttributeLocation, 3, gl.FLOAT, false, 7 * Float32Array.BYTES_PER_ELEMENT, 0)
+    gl.bindBuffer(gl.ARRAY_BUFFER, vertexesPositionBuffer)
+    gl.vertexAttribPointer(positionAttributeLocation, 3, gl.FLOAT, false, 0, 0)
 
     const colorAttributeLocation = gl.getAttribLocation(program, 'color')
     gl.enableVertexAttribArray(colorAttributeLocation)
-        // gl.bindBuffer(gl.ARRAY_BUFFER, triangleColorsBuffer)
-        // gl.vertexAttribPointer(colorAttributeLocation, 4, gl.FLOAT, false, 0, 0)
-    gl.bindBuffer(gl.ARRAY_BUFFER, positionAndColorBuffer)
-    gl.vertexAttribPointer(colorAttributeLocation, 4, gl.FLOAT, false, 7 * Float32Array.BYTES_PER_ELEMENT, 3 * Float32Array.BYTES_PER_ELEMENT)
+    gl.bindBuffer(gl.ARRAY_BUFFER, colorsBuffer)
+    gl.vertexAttribPointer(colorAttributeLocation, 4, gl.FLOAT, false, 0, 0)
+
+    const projectionMatrix = mat4.create();
+    const viewMatrix = mat4.create();
+    let modelMatrix = mat4.create();
+
+    mat4.perspective(
+        projectionMatrix, 45  * Math.PI / 180.0, gl.canvas.clientWidth/gl.canvas.clientHeight, .1, 10)
+
+    console.log(projectionMatrix, viewMatrix, modelMatrix)
+
+    const modelMatrixLocation = gl.getUniformLocation(program, 'modelMatrix')
+    const viewMatrixLocation = gl.getUniformLocation(program, 'viewMatrix')
+    const projectMatrixLocation = gl.getUniformLocation(program, 'projectionMatrix')
+    gl.uniformMatrix4fv(projectMatrixLocation, false, projectionMatrix)
+    gl.uniformMatrix4fv(viewMatrixLocation, false, viewMatrix)
+
+    let angel = 0 ;
 
     runRandedLoop();
+
+    function runRandedLoop() {
+
+        gl.clearColor(0,0,0,1)
+        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
+        gl.enable(gl.DEPTH_TEST)
+
+        mat4.identity(modelMatrix);
+        mat4.translate(modelMatrix, modelMatrix, [0, 0, -5])
+        mat4.rotateY(modelMatrix, modelMatrix, angel)
+        mat4.rotateX(modelMatrix, modelMatrix, .25)
+        angel += .01
+
+        gl.uniformMatrix4fv(modelMatrixLocation, false, modelMatrix)
+
+        gl.drawArrays(gl.TRIANGLES, 0, 36)
+
+        requestAnimationFrame(runRandedLoop)
+    }
 }
 
-function runRandedLoop() {
-
-    gl.clearColor(0,0,0,1)
-    gl.clear(gl.COLOR_BUFFER_BIT)
-
-    gl.drawArrays(gl.TRIANGLES, 0, 3)
-
-    requestAnimationFrame(runRandedLoop)
-}
 
 function compileVertexShader(shaderSource, shaderType) {
     const shader = gl.createShader(shaderType)
