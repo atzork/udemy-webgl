@@ -1,5 +1,5 @@
 import {loadShaders} from "./resources.js";
-import {mat4} from "./gl-matrix/index.js";
+import {mat4, vec3, vec4} from "./gl-matrix/index.js";
 
 let gl;
 let vertexShaderSrc;
@@ -116,13 +116,21 @@ function start(shaderSources) {
 
     console.log('loaded', arguments)
 
-    const cube = createCube();
+    const cube = createCube()
+
+    const uniformColorsArray = []
+    let color = vec4.fromValues(1,0,0,1)
+    uniformColorsArray.push(color)
+    color = vec4.fromValues(0,1,0,1)
+    uniformColorsArray.push(color)
+    color = vec4.fromValues(0,0,1,1)
+    uniformColorsArray.push(color)
 
     gl.useProgram(cube.program)
 
-    const projectionMatrix = mat4.create();
-    const viewMatrix = mat4.create();
-
+    const offsetsVector = vec3.fromValues(-2, 0, 2)
+    const projectionMatrix = mat4.create()
+    const viewMatrix = mat4.create()
 
     mat4.perspective(
         projectionMatrix, 45  * Math.PI / 180.0, gl.canvas.clientWidth/gl.canvas.clientHeight, .1, 10)
@@ -132,7 +140,14 @@ function start(shaderSources) {
     gl.uniformMatrix4fv(projectMatrixLocation, false, projectionMatrix)
     gl.uniformMatrix4fv(viewMatrixLocation, false, viewMatrix)
 
+    const colorsUniformArrayLocation0 = gl.getUniformLocation(cube.program, 'colorsUniformArray[0]')
+    const colorsUniformArrayLocation1 = gl.getUniformLocation(cube.program, 'colorsUniformArray[1]')
+    const colorsUniformArrayLocation2 = gl.getUniformLocation(cube.program, 'colorsUniformArray[2]')
+    const offsetsUniformLocation = gl.getUniformLocation(cube.program, 'offsets')
+    const timeUniformLocation = gl.getUniformLocation(cube.program, 'time')
+
     let angel = 0 ;
+    let currentTime = .1;
 
     runRandedLoop();
 
@@ -144,33 +159,27 @@ function start(shaderSources) {
 
         //
         // 1-st
-        mat4.identity(cube.modelMatrix);
-        mat4.translate(cube.modelMatrix, cube.modelMatrix, [2, 0, -5])
-        mat4.rotateY(cube.modelMatrix, cube.modelMatrix, angel)
-        mat4.rotateX(cube.modelMatrix, cube.modelMatrix, .25)
         angel += .01
-        gl.uniformMatrix4fv(cube.modelMatrixLocation, false, cube.modelMatrix)
-        gl.drawArrays(gl.TRIANGLES, 0, 36)
+        currentTime += .02;
 
-        //
-        // 2-nd
-        mat4.identity(cube.modelMatrix);
-        mat4.translate(cube.modelMatrix, cube.modelMatrix, [-2, 0, -5])
-        mat4.rotateY(cube.modelMatrix, cube.modelMatrix, angel)
-        mat4.rotateX(cube.modelMatrix, cube.modelMatrix, .25)
-        angel +=  .01
-        gl.uniformMatrix4fv(cube.modelMatrixLocation, false, cube.modelMatrix)
-        gl.drawArrays(gl.TRIANGLES, 0, 36)
-
-        //
-        // 3-rd
         mat4.identity(cube.modelMatrix);
         mat4.translate(cube.modelMatrix, cube.modelMatrix, [0, 0, -5])
         mat4.rotateY(cube.modelMatrix, cube.modelMatrix, angel)
         mat4.rotateX(cube.modelMatrix, cube.modelMatrix, .25)
-        angel += .01
+
         gl.uniformMatrix4fv(cube.modelMatrixLocation, false, cube.modelMatrix)
-        gl.drawArrays(gl.TRIANGLES, 0, 36)
+
+        gl.uniform4fv(colorsUniformArrayLocation0, uniformColorsArray[0])
+        gl.uniform4fv(colorsUniformArrayLocation1, uniformColorsArray[1])
+        gl.uniform4fv(colorsUniformArrayLocation2, uniformColorsArray[2])
+        gl.uniform3fv(offsetsUniformLocation, offsetsVector)
+        gl.uniform1f(timeUniformLocation, currentTime)
+
+        // gl.useProgram(cube.program)
+        // gl.bindVertexArray(cube.vao)
+
+        // gl.drawArrays(gl.TRIANGLES, 0, 36)
+        gl.drawArraysInstanced(gl.TRIANGLES, 0, 36, 3)
 
         requestAnimationFrame(runRandedLoop)
     }
