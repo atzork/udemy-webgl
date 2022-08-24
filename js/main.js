@@ -29,6 +29,8 @@ function init() {
         throw new Error('WebGL does not supported in Browser')
     }
 
+    updateCanvasSize();
+
     gl.viewport(0, 0, gl.canvas.width, gl.canvas.height)
 
     loadShaders().then(start)
@@ -241,6 +243,11 @@ function createProgram(shaders) {
     return program
 }
 
+function updateCanvasSize() {
+    gl.canvas.width = gl.canvas.clientWidth
+    gl.canvas.height = gl.canvas.clientHeight
+}
+
 function catchCameraAction(camera) {
     //
     // move left\right
@@ -284,6 +291,8 @@ function catchCameraAction(camera) {
 }
 
 function eventsListeners() {
+    window.addEventListener('resize', updateCanvasSize);
+
     document.addEventListener('keydown', (event) => {
         switch (event.key) {
             case 'w':
