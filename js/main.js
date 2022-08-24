@@ -82,9 +82,9 @@ function createCube() {
         return acc.concat(facePoints.flat())
     }, [])
 
-    cube.colorsBuffer = gl.createBuffer()
-    gl.bindBuffer(gl.ARRAY_BUFFER, cube.colorsBuffer)
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(cube.colors), gl.STATIC_DRAW)
+    // cube.colorsBuffer = gl.createBuffer()
+    // gl.bindBuffer(gl.ARRAY_BUFFER, cube.colorsBuffer)
+    // gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(cube.colors), gl.STATIC_DRAW)
 
     cube.vertexShader = compileVertexShader(vertexShaderSrc, gl.VERTEX_SHADER);
     cube.fragmentShader = compileVertexShader(fragmentShaderSrc, gl.FRAGMENT_SHADER);
@@ -99,10 +99,10 @@ function createCube() {
     gl.bindBuffer(gl.ARRAY_BUFFER, cube.positionBuffer)
     gl.vertexAttribPointer(cube.positionAttributeLocation, 3, gl.FLOAT, false, 0, 0)
 
-    cube.colorAttributeLocation = gl.getAttribLocation(cube.program, 'color')
-    gl.enableVertexAttribArray(cube.colorAttributeLocation)
-    gl.bindBuffer(gl.ARRAY_BUFFER, cube.colorsBuffer)
-    gl.vertexAttribPointer(cube.colorAttributeLocation, 4, gl.FLOAT, false, 0, 0)
+    // cube.colorAttributeLocation = gl.getAttribLocation(cube.program, 'color')
+    // gl.enableVertexAttribArray(cube.colorAttributeLocation)
+    // gl.bindBuffer(gl.ARRAY_BUFFER, cube.colorsBuffer)
+    // gl.vertexAttribPointer(cube.colorAttributeLocation, 4, gl.FLOAT, false, 0, 0)
 
     cube.modelMatrix = mat4.create();
     cube.modelMatrixLocation = gl.getUniformLocation(cube.program, 'modelMatrix')
@@ -138,7 +138,6 @@ function start(shaderSources) {
     const viewMatrixLocation = gl.getUniformLocation(cube.program, 'viewMatrix')
     const projectMatrixLocation = gl.getUniformLocation(cube.program, 'projectionMatrix')
     gl.uniformMatrix4fv(projectMatrixLocation, false, projectionMatrix)
-    gl.uniformMatrix4fv(viewMatrixLocation, false, viewMatrix)
 
     const colorsUniformArrayLocation0 = gl.getUniformLocation(cube.program, 'colorsUniformArray[0]')
     const colorsUniformArrayLocation1 = gl.getUniformLocation(cube.program, 'colorsUniformArray[1]')
@@ -148,6 +147,8 @@ function start(shaderSources) {
 
     let angel = 0 ;
     let currentTime = .1;
+    const camera = {position: vec3.fromValues(0,0,0), target: vec3.fromValues(0,0,0)}
+    vec3.add(camera.target, camera.position, vec3.fromValues(0, 0, -1))
 
     runRandedLoop();
 
@@ -157,10 +158,15 @@ function start(shaderSources) {
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
         gl.enable(gl.DEPTH_TEST)
 
+        mat4.lookAt(viewMatrix, camera.position, camera.target, vec3.fromValues(0,1, 0))
+        vec3.add(camera.target, camera.position, vec3.fromValues(0, 0, -1))
+        gl.uniformMatrix4fv(viewMatrixLocation, false, viewMatrix)
+
         //
         // 1-st
         angel += .01
         currentTime += .02;
+        camera.position[1] += .01
 
         mat4.identity(cube.modelMatrix);
         mat4.translate(cube.modelMatrix, cube.modelMatrix, [0, 0, -5])
