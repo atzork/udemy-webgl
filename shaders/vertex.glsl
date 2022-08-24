@@ -17,8 +17,8 @@ void main() {
     gl_Position = projectionMatrix * viewMatrix * modelMatrix * vec4(position.x + offsets[gl_InstanceID], position.yz, 1);
     fcolor = colorsUniformArray[(gl_InstanceID + gl_VertexID) %3];
     fcolor = vec4(
-        fcolor.r * sin(time),
-        fcolor.g * cos(time),
-        fcolor.g * cos(2.0*time)
+        fcolor.r * sin(time) + .1,
+        fcolor.g * cos(time) + .1,
+        fcolor.g * cos(2.0*time) + .1
     ,1);
 }
