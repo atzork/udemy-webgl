@@ -1,4 +1,3 @@
-
 import {loadShaders} from "./resources.js";
 import {mat4, vec3, vec4} from "./gl-matrix/index.js";
 
@@ -19,65 +18,96 @@ function init() {
     loadShaders().then(start)
 }
 
-function createRectangle() {
-    const rectangle = {};
+function createCube() {
+    const cube = {};
 
+    cube.vertexes = [
+        -0.5, -0.5, -0.5,
+        0.5, -0.5, -0.5,
+        0.5, 0.5, -0.5,
+        0.5, 0.5, -0.5,
+        -0.5, 0.5, -0.5,
+        -0.5, -0.5, -0.5,
 
+        -0.5, -0.5, 0.5,
+        0.5, -0.5, 0.5,
+        0.5, 0.5, 0.5,
+        0.5, 0.5, 0.5,
+        -0.5, 0.5, 0.5,
+        -0.5, -0.5, 0.5,
 
-    rectangle.vertexes = [
-        -1, -1, 0,
-        1, -1, 0,
-        1, 1, 0,
-        -1, 1, 0,
+        -0.5, 0.5, 0.5,
+        -0.5, 0.5, -0.5,
+        -0.5, -0.5, -0.5,
+        -0.5, -0.5, -0.5,
+        -0.5, -0.5, 0.5,
+        -0.5, 0.5, 0.5,
+
+        0.5, 0.5, 0.5,
+        0.5, 0.5, -0.5,
+        0.5, -0.5, -0.5,
+        0.5, -0.5, -0.5,
+        0.5, -0.5, 0.5,
+        0.5, 0.5, 0.5,
+
+        -0.5, -0.5, -0.5,
+        0.5, -0.5, -0.5,
+        0.5, -0.5, 0.5,
+        0.5, -0.5, 0.5,
+        -0.5, -0.5, 0.5,
+        -0.5, -0.5, -0.5,
+
+        -0.5, 0.5, -0.5,
+        0.5, 0.5, -0.5,
+        0.5, 0.5, 0.5,
+        0.5, 0.5, 0.5,
+        -0.5, 0.5, 0.5,
+        -0.5, 0.5, -0.5,
+    ]
+    cube.positionBuffer = gl.createBuffer()
+    gl.bindBuffer(gl.ARRAY_BUFFER, cube.positionBuffer)
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(cube.vertexes), gl.STATIC_DRAW)
+
+    const faceColors = [
+        [1, 0, 0, 1], // front
+        [0, 1, 0, 1], // back
+        [0, 0, 1, 1], // top
+        [1, 1, 0, 1], // bottom
+        [0, 1, 1, 1], // right
+        [1, 0, 1, 1], // left
     ]
 
-    rectangle.indexis = [
-        0,1,2, // 1-st triangle
-        0,2,3  // 2-nd triangle
-    ]
+    cube.colors = faceColors.reduce((acc, curr, index) =>  {
+        const facePoints = new Array(6).fill(curr)
+        return acc.concat(facePoints.flat())
+    }, [])
 
-    rectangle.positionBuffer = gl.createBuffer()
-    gl.bindBuffer(gl.ARRAY_BUFFER, rectangle.positionBuffer)
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(rectangle.vertexes), gl.STATIC_DRAW)
+    cube.colorsBuffer = gl.createBuffer()
+    gl.bindBuffer(gl.ARRAY_BUFFER, cube.colorsBuffer)
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(cube.colors), gl.STATIC_DRAW)
 
-    rectangle.colors = [
-        1, 0, 0, 1,
-        1, 0, 0, 1,
-        1, 0, 0, 1,
-        1, 0, 0, 1,
-    ]
+    cube.vertexShader = compileVertexShader(vertexShaderSrc, gl.VERTEX_SHADER);
+    cube.fragmentShader = compileVertexShader(fragmentShaderSrc, gl.FRAGMENT_SHADER);
 
-    rectangle.vao = gl.createVertexArray();
-    gl.bindVertexArray(rectangle.vao);
+    cube.program = createProgram([cube.vertexShader, cube.fragmentShader]);
 
-    rectangle.colorsBuffer = gl.createBuffer()
-    gl.bindBuffer(gl.ARRAY_BUFFER, rectangle.colorsBuffer)
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(rectangle.colors), gl.STATIC_DRAW)
+    cube.vao = gl.createVertexArray();
+    gl.bindVertexArray(cube.vao);
 
-    rectangle.indexisBuffer = gl.createBuffer()
-    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, rectangle.indexisBuffer)
-    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(rectangle.indexis), gl.STATIC_DRAW)
+    cube.positionAttributeLocation = gl.getAttribLocation(cube.program, 'position')
+    gl.enableVertexAttribArray(cube.positionAttributeLocation)
+    gl.bindBuffer(gl.ARRAY_BUFFER, cube.positionBuffer)
+    gl.vertexAttribPointer(cube.positionAttributeLocation, 3, gl.FLOAT, false, 0, 0)
 
-    rectangle.vertexShader = compileVertexShader(vertexShaderSrc, gl.VERTEX_SHADER);
-    rectangle.fragmentShader = compileVertexShader(fragmentShaderSrc, gl.FRAGMENT_SHADER);
+    cube.colorAttributeLocation = gl.getAttribLocation(cube.program, 'color')
+    gl.enableVertexAttribArray(cube.colorAttributeLocation)
+    gl.bindBuffer(gl.ARRAY_BUFFER, cube.colorsBuffer)
+    gl.vertexAttribPointer(cube.colorAttributeLocation, 4, gl.FLOAT, false, 0, 0)
 
-    rectangle.program = createProgram([rectangle.vertexShader, rectangle.fragmentShader]);
+    cube.modelMatrix = mat4.create();
+    cube.modelMatrixLocation = gl.getUniformLocation(cube.program, 'modelMatrix')
 
-    rectangle.positionAttributeLocation = gl.getAttribLocation(rectangle.program, 'position')
-    gl.enableVertexAttribArray(rectangle.positionAttributeLocation)
-    gl.bindBuffer(gl.ARRAY_BUFFER, rectangle.positionBuffer)
-    gl.vertexAttribPointer(rectangle.positionAttributeLocation, 3, gl.FLOAT, false, 0, 0)
-
-    rectangle.colorAttributeLocation = gl.getAttribLocation(rectangle.program, 'color')
-    gl.enableVertexAttribArray(rectangle.colorAttributeLocation)
-    gl.bindBuffer(gl.ARRAY_BUFFER, rectangle.colorsBuffer)
-    gl.vertexAttribPointer(rectangle.colorAttributeLocation, 4, gl.FLOAT, false, 0, 0)
-
-
-    rectangle.modelMatrix = mat4.create();
-    rectangle.modelMatrixLocation = gl.getUniformLocation(rectangle.program, 'modelMatrix')
-
-    return rectangle;
+    return cube;
 }
 
 function start(shaderSources) {
@@ -86,7 +116,7 @@ function start(shaderSources) {
 
     console.log('loaded', arguments)
 
-    const rectangle = createRectangle()
+    const cube = createCube()
 
     const uniformColorsArray = []
     let color = vec4.fromValues(1,0,0,1)
@@ -96,7 +126,7 @@ function start(shaderSources) {
     color = vec4.fromValues(0,0,1,1)
     uniformColorsArray.push(color)
 
-    gl.useProgram(rectangle.program)
+    gl.useProgram(cube.program)
 
     const offsetsVector = vec3.fromValues(-2, 0, 2)
     const projectionMatrix = mat4.create()
@@ -105,16 +135,16 @@ function start(shaderSources) {
     mat4.perspective(
         projectionMatrix, 45  * Math.PI / 180.0, gl.canvas.clientWidth/gl.canvas.clientHeight, .1, 10)
 
-    const viewMatrixLocation = gl.getUniformLocation(rectangle.program, 'viewMatrix')
-    const projectMatrixLocation = gl.getUniformLocation(rectangle.program, 'projectionMatrix')
+    const viewMatrixLocation = gl.getUniformLocation(cube.program, 'viewMatrix')
+    const projectMatrixLocation = gl.getUniformLocation(cube.program, 'projectionMatrix')
     gl.uniformMatrix4fv(projectMatrixLocation, false, projectionMatrix)
     gl.uniformMatrix4fv(viewMatrixLocation, false, viewMatrix)
 
-    const colorsUniformArrayLocation0 = gl.getUniformLocation(rectangle.program, 'colorsUniformArray[0]')
-    const colorsUniformArrayLocation1 = gl.getUniformLocation(rectangle.program, 'colorsUniformArray[1]')
-    const colorsUniformArrayLocation2 = gl.getUniformLocation(rectangle.program, 'colorsUniformArray[2]')
-    const offsetsUniformLocation = gl.getUniformLocation(rectangle.program, 'offsets')
-    const timeUniformLocation = gl.getUniformLocation(rectangle.program, 'time')
+    const colorsUniformArrayLocation0 = gl.getUniformLocation(cube.program, 'colorsUniformArray[0]')
+    const colorsUniformArrayLocation1 = gl.getUniformLocation(cube.program, 'colorsUniformArray[1]')
+    const colorsUniformArrayLocation2 = gl.getUniformLocation(cube.program, 'colorsUniformArray[2]')
+    const offsetsUniformLocation = gl.getUniformLocation(cube.program, 'offsets')
+    const timeUniformLocation = gl.getUniformLocation(cube.program, 'time')
 
     let angel = 0 ;
     let currentTime = .1;
@@ -132,12 +162,12 @@ function start(shaderSources) {
         angel += .01
         currentTime += .02;
 
-        mat4.identity(rectangle.modelMatrix);
-        mat4.translate(rectangle.modelMatrix, rectangle.modelMatrix, [0, 0, -5])
-        mat4.rotateY(rectangle.modelMatrix, rectangle.modelMatrix, angel)
-        mat4.rotateX(rectangle.modelMatrix, rectangle.modelMatrix, .25)
+        mat4.identity(cube.modelMatrix);
+        mat4.translate(cube.modelMatrix, cube.modelMatrix, [0, 0, -5])
+        mat4.rotateY(cube.modelMatrix, cube.modelMatrix, angel)
+        mat4.rotateX(cube.modelMatrix, cube.modelMatrix, .25)
 
-        gl.uniformMatrix4fv(rectangle.modelMatrixLocation, false, rectangle.modelMatrix)
+        gl.uniformMatrix4fv(cube.modelMatrixLocation, false, cube.modelMatrix)
 
         gl.uniform4fv(colorsUniformArrayLocation0, uniformColorsArray[0])
         gl.uniform4fv(colorsUniformArrayLocation1, uniformColorsArray[1])
@@ -145,13 +175,11 @@ function start(shaderSources) {
         gl.uniform3fv(offsetsUniformLocation, offsetsVector)
         gl.uniform1f(timeUniformLocation, currentTime)
 
-        gl.useProgram(rectangle.program)
-        gl.bindVertexArray(rectangle.vao)
+        // gl.useProgram(cube.program)
+        // gl.bindVertexArray(cube.vao)
 
-        // gl.drawArrays(gl.TRIANGLES, 0, 6)
-        // gl.drawElements(gl.TRIANGLES, 6, gl.UNSIGNED_SHORT, 0)
-        gl.drawElementsInstanced(gl.TRIANGLES, 6, gl.UNSIGNED_SHORT, 0, 3)
-        // gl.drawArraysInstanced(gl.TRIANGLES, 0, 6, 3)
+        // gl.drawArrays(gl.TRIANGLES, 0, 36)
+        gl.drawArraysInstanced(gl.TRIANGLES, 0, 36, 3)
 
         requestAnimationFrame(runRandedLoop)
     }
